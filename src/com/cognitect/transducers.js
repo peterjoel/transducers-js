@@ -283,6 +283,47 @@ transducers.map = function(f) {
 /**
  * @constructor
  */
+transducers.Scan = function( agg, start, xf ){
+    this.xf = xf;
+    this.agg = agg;
+    this.accum = start === undefined ? xf.init() : start;
+};
+transducers.Scan.prototype.init = function(){
+    return this.xf.init()
+};
+transducers.Scan.prototype.result = function(v) {
+    return this.xf.result(v)
+};
+transducers.Scan.prototype.step = function( result, input ) {
+    this.accum = this.agg( this.accum, input )
+    return this.xf.step( result, this.accum )
+};
+
+/**
+ * Scanning transducer constructor
+ * @method transducers.scan
+ * @param {Function} agg the aggregation operation
+ * @param {Function} seed the starting value
+ * @return {transducers.Scan} returns a scanning transducer
+ * @example
+ *     var t = transducers;
+ *     var add = function(a, b) { return a + b; };
+ *     var xf = t.scan(add, 10);
+ *     t.into([], xf, [1,2,3]); // [11,13,16]
+ */
+transducers.scan = function(agg, seed) {
+    if(TRANSDUCERS_DEV && (agg == null)) {
+        throw new Error("At least one argument must be supplied to scan");
+    } else {
+        return function (xf) {
+            return new transducers.Scan(agg, seed, xf)
+        };
+    }
+};
+
+/**
+ * @constructor
+ */
 transducers.Filter = function(pred, xf) {
     this.pred = pred;
     this.xf = xf;
